@@ -137,15 +137,32 @@ Overrides can be nested:
 
 ```nix
 override {
-  foo.bar = set 1;
+  foo.bar = set 2;
 }
 ```
 
-… and they will create any intermediate attributes that are missing:
+… and they won't clobber existing parent attributes if already present:
 
 ```nix
-nix-repl> :print override { foo.bar = set 1; } { }
-{ foo = { bar = 1; }; }
+nix-repl> :print override { foo.bar = set 2; } { foo.baz = 3; }
+{ foo = { bar = 2; baz = 3; }; }
+```
+
+Without `override`, you would have to write something like this to avoid
+clobbering the parent attribute:
+
+```nix
+prev: {
+  foo = prev.foo // { bar = 2; };
+}
+```
+
+… but then that breaks if the `foo` attribute does **not** already exist,
+whereas `override` handles the parent attribute's absence gracefully:
+
+```nix
+nix-repl> :print override { foo.bar = set 2; } { }
+{ foo = { bar = 2; }; }
 ```
 
 You can modify an existing value using `modify`, which is the most general
