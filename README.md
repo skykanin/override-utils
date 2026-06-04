@@ -51,29 +51,29 @@ final: override {
 
 ### Flake interface
 
+Example flake usage:
+
 ```nix
 { inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
 
-  inputs.flake-utils.url = "github:numtide/flake-utils";
-
   inputs.override-utils.url = "github:Gabriella439/override-utils";
 
-  outputs = { nixpkgs, flake-utils, override-utils, ... }:
-    flake-utils.lib.eachDefaultSystem (system: {
-      packages =
-        let
-          utils = override-utils.lib."${system}";
+  outputs = { nixpkgs, override-utils, ... }:
+    let
+      utils = override-utils.lib;
 
-          overlay = final: utils.override {
-            nix-serve-ng.overrideAttrs.patches =
-              utils.append [ ./lix-compat.patch ];
-          };
+      overlay = final: utils.override {
+        nix-serve-ng.overrideAttrs.patches =
+          utils.append [ ./lix-compat.patch ];
+      };
 
-          pkgs = nixpkgs.legacyPackages."${system}".appendOverlays [ overlay ];
+      inherit (nixpkgs) lib;
 
-        in
-          { inherit (pkgs) nix-serve-ng; };
-    });
+    in
+      { packages = lib.genAttrs lib.systems.flakeExposed (system:
+          nixpkgs.legacyPackages."${system}".appendOverlays [ overlay ]
+        );
+      };
 }
 ```
 
